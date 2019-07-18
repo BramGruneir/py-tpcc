@@ -86,29 +86,19 @@ TXN_QUERIES = {
 
     "STOCK_LEVEL": {
         "getOId": "SELECT D_NEXT_O_ID FROM DISTRICT WHERE D_W_ID = %s AND D_ID = %s",
-        #"getStockCount": """
-        #    SELECT COUNT(DISTINCT(OL_I_ID)) FROM ORDER_LINE, STOCK
-        #    WHERE OL_W_ID = %s
-        #      AND OL_D_ID = %s
-        #      AND OL_O_ID < %s
-        #      AND OL_O_ID >= %s
-        #      AND S_W_ID = %s
-        #      AND S_I_ID = OL_I_ID
-        #      AND S_QUANTITY < %s
-        #""",
         "getStockCount": """
             SELECT count(*) FROM (
 			        SELECT DISTINCT s_i_id
 			        FROM order_line
 			        JOIN stock
 			        ON s_i_id=ol_i_id AND s_w_id=ol_w_id
-			        WHERE ol_w_id = $1
-				        AND ol_d_id = $2
-				        AND ol_o_id BETWEEN $3 - 20 AND $3 - 1
-				        AND s_quantity < $4
+			        WHERE ol_w_id = %s
+				        AND ol_d_id = %s
+				        AND ol_o_id BETWEEN %s AND %s -1
+				        AND s_quantity < %s
 		        )
-         """,
-    }
+          """,
+    },
 }
 
 
@@ -118,9 +108,9 @@ TXN_QUERIES = {
 class CockroachdbDriver(AbstractDriver):
     DEFAULT_CONFIG = {
         "host": ("The host address to the cockroach database", "localhost"),
-        "port": ("Port number", 26257),
-        "user": ("Username","root"),
-        "dbname": ("Database Name", "defaultdb")
+		"port": ("Port number", 26257),
+		"user": ("Username","root"),
+		"dbname": ("Database Name", "defaultdb")
     }
 
     def __init__(self, ddl):
@@ -259,12 +249,12 @@ class CockroachdbDriver(AbstractDriver):
         self.conn.commit()
 
     ## ----------------------------------------------
-    ## Wrapper for a transation
-    ## This automatically re-calls "op" with the open transaction as an argument
-    ## as long as the database server asks for the transaction to be retried
+	## Wrapper for a transation
+	## This automatically re-calls "op" with the open transaction as an argument
+	## as long as the database server asks for the transaction to be retried
     ## ------------------------------------------------
     def onestmt(self,sql):
-       self.cursor.execute(sql)
+	   self.cursor.execute(sql)
 
     def run_transaction(self,op):
         with self.conn:
@@ -284,7 +274,7 @@ class CockroachdbDriver(AbstractDriver):
     ## doDelivery
     ## ----------------------------------------------
     def doDelivery(self, params):
-        self.run_transaction(lambda: self.doDelivery_txn(params))
+	    self.run_transaction(lambda: self.doDelivery_txn(params))
 
     def doDelivery_txn(self, params):
         q = TXN_QUERIES["DELIVERY"]
@@ -332,7 +322,7 @@ class CockroachdbDriver(AbstractDriver):
     ## doNewOrder
     ## ----------------------------------------------
     def doNewOrder(self, params):
-        self.run_transaction(lambda: self.doNewOrder_txn(params))
+	    self.run_transaction(lambda: self.doNewOrder_txn(params))
 
     def doNewOrder_txn(self, params):
         q = TXN_QUERIES["NEW_ORDER"]
@@ -468,7 +458,7 @@ class CockroachdbDriver(AbstractDriver):
     ## ----------------------------------------------
 
     def doOrderStatus(self, params):
-        self.run_transaction(lambda: self.doOrderStatus_txn(params))
+	    self.run_transaction(lambda: self.doOrderStatus_txn(params))
 
     def doOrderStatus_txn(self, params):
         q = TXN_QUERIES["ORDER_STATUS"]
@@ -515,7 +505,7 @@ class CockroachdbDriver(AbstractDriver):
     ## ----------------------------------------------
 
     def doPayment(self, params):
-        self.run_transaction(lambda: self.doPayment_txn(params))
+	    self.run_transaction(lambda: self.doPayment_txn(params))
 
     def doPayment_txn(self, params):
         q = TXN_QUERIES["PAYMENT"]
@@ -587,7 +577,7 @@ class CockroachdbDriver(AbstractDriver):
     ## doStockLevel
     ## ----------------------------------------------
     def doStockLevel(self, params):
-        self.run_transaction(lambda: self.doStockLevel_txn(params))
+	    self.run_transaction(lambda: self.doStockLevel_txn(params))
 
     def doStockLevel_txn(self, params):
         q = TXN_QUERIES["STOCK_LEVEL"]
@@ -601,7 +591,11 @@ class CockroachdbDriver(AbstractDriver):
         assert result
         o_id = result[0]
 
-        self.cursor.execute(q["getStockCount"], [w_id, d_id, o_id, (o_id - 20), w_id, threshold])
+        # print([w_id, d_id, o_id, (o_id - 20), w_id, threshold])
+
+        self.cursor.execute(q["getStockCount"], [w_id, d_id, (o_id-20), (o_id-1), threshold])
+
+
         result = self.cursor.fetchone()
 
         #self.conn.commit()
