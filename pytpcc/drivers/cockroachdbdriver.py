@@ -103,7 +103,7 @@ TXN_QUERIES = {
 
 
 ## ==============================================
-## SqliteDriver
+## CockroachdbDriver
 ## ==============================================
 class CockroachdbDriver(AbstractDriver):
     DEFAULT_CONFIG = {
@@ -166,24 +166,22 @@ class CockroachdbDriver(AbstractDriver):
             #sslmode='require'
         )
 
-            #current_conn.autocommit = False
+        #current_conn.autocommit = False
         self.conn = current_conn
         #self.conn.autocommit = True
         self.cursor = self.conn.cursor()
 
-        #if config["ignore_ddl"]:
-        #    return
-        #else:
-        if True:
-          self.conn.autocommit = True
+        return
+        #if True:
+        #  self.conn.autocommit = True
 
-          with open (self.ddl, "r") as myfile:
-              data=myfile.read()
+        #  with open (self.ddl, "r") as myfile:
+        #      data=myfile.read()
 
         #print("GGG: " + data )
-          self.cursor.execute(data)
+        #  self.cursor.execute(data)
 
-          self.conn.autocommit = False
+        #  self.conn.autocommit = False
 
         #db_names = [db_from_table(table) for table in TPCC_SCM.keys()]
 
